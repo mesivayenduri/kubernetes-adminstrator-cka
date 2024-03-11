@@ -4,6 +4,6 @@
 # Install ETCD
 
 * Default Port of ETCD 2379
-Download Binaries
-Extract
-Run ETCD Service
+- Download Binaries
+- Extract
+- Run ETCD Service
