@@ -1,0 +1,58 @@
+Initially When you setup a kubernetes cluster with kubeadm , you will be login as kubernetes-admin.
+
+Now to create a new user, First you need to generate user certificates.
+
+Ex: I want to create a user "Developer". For this I need to genrate private key, create CSR and approve CSR using CA
+
+> openssl genrsa -out developer.key 2048
+> openssl req -new -key developer.key -subj="/CN=Developer" -out developer.csr
+> openssl x509 -req -in developer.csr -CA ca.crt -CAkey ca.key -out developer.crt
+
+
+Now Create Role and Rolebinding Objects in kubernetes
+
+Ex: 
+
+developer-role.yaml
+
+apiVersion: rbac.authorization.k8s.io/v1
+kind: Role
+metadata:
+  name: developer
+rules:
+- apiGroups:
+  - ""
+  resources:
+  - pods
+  verbs:
+  - get
+  - list
+  - watch
+  - delete
+
+
+developer-role-binding.yaml
+
+apiVersion: rbac.authorization.k8s.io/v1
+kind: RoleBinding
+metadata:
+  creationTimestamp: null
+  name: developer-role-binding
+roleRef:
+  apiGroup: rbac.authorization.k8s.io
+  kind: Role
+  name: developer
+subjects:
+- apiGroup: rbac.authorization.k8s.io
+  kind: User
+  name: Developer
+
+
+Now update the config file under $HOME/.kube/.  with user and contexts. Refer sample-config file
+
+
+
+
+
+
+

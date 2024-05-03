@@ -1,0 +1,184 @@
+Lets identify the server and client componenets in kubernetes cluster:
+
+Certificate Authority:
+======================
+ca.crt
+ca.key
+
+
+###########################         KEY GENERATION          ######################################
+> openssl genrsa -out ca.key
+> openssl req -new -key ca.key -subj "/CN=KUBERNETES_CA" -out ca.csr
+> openssl x509 -req -in ca.csr -signkey ca.key -out ca.crt
+
+
+
+SERVER COMPONENTS AND CERTS
+=============================
+
+kube-api server:
+    - apiserver.crt
+    - apiserver.key
+
+###########################         KEY GENERATION          ######################################
+> openssl genrsa -out kube-apiserver.key
+
+create openssl.cnf with below contents
+[ req ]
+distinguished_name     = req_distinguished_name
+req_extensions         = v3_req
+
+[ v3_req ]
+basicConstraints       = CA:FALSE
+keyUsage = nonRepudiation
+subjectAltName = @alt_names
+
+[alt_names]
+DNS.1 = kubernetes
+DNS.2 = kubernetes.default
+DNS.3 = kubernetes.default.svc
+DNS.4 = kubernetes.default.svc.cluster.local
+IP.1 = 10.244.0.1
+IP.2 = 10.0.2.15
+
+[ req_distinguished_name ]
+countryName            = IN
+stateOrProvinceName    = AP
+localityName           = EG_RJY
+organizationName       = saisiva
+organizationalUnitName = saisiva
+commonName             = saisiva.com
+emailAddress           = tech.krishnayenduri@gmail.com
+
+> openssl req -new -key kube-apiserver.key -subj "/CN=kube-apiserver" -out kube-apiserver.csr -config openssl.cnf
+> opessl x509 -req -in kube-apiserver.csr -CA ca.crt -CAkey ca.key -out kube-apiserver.crt
+
+
+
+etcd server:
+    - etcd-server.crt
+    - etcd-server.key
+
+###########################         KEY GENERATION          ######################################
+> openssl genrsa -out etcd-server.key
+> openssl req -new -key etcd-server.key -subj "/CN=etcd-server" -out etcd-server.csr
+> openssl x509 -req -in etcd-server.csr -CA ca.crt -CAkey ca.key -out etcd-server.crt
+
+
+kubelet server:
+    - kubelet.crt
+    - kubelet.key
+
+
+
+
+
+CLIENT COMPONENTS AND CERTS
+============================
+
+As a admin we mainly communicate with kube-api server. So we need a pair of Certs
+
+admin:
+    - admin.crt
+    - admin.key
+
+###########################         KEY GENERATION          ######################################
+> openssl genrsa -out admin.key
+> openssl req -new -key admin.key -subj "/CN=kube-admin/O=system:masters" -out admin.csr
+> openssl x509 -req -in admin.csr -CA ca.crt -CAkey ca.key -out admin.crt
+
+
+
+kube-scheduler talks with kubeapi server to looks for pods that require scheduling
+
+kube-scheduler:
+    - scheduler.crt
+    - scheduler.key
+
+###########################         KEY GENERATION          ######################################
+> openssl genrsa -out kube-scheduler.key
+> openssl req -new -key kube-scheduler.key -subj "/CN=kube-scheduler/O=system:kube-scheduler" -out kube-scheduler.csr
+> openssl x509 -req -in kube-scheduler.csr -CA ca.crt -CAkey ca.key -out kube-scheduler.crt
+
+
+kube controller manager is another componenet that talks to kubeapi server.
+
+kube-controller-manager:
+    - controller-manager.crt
+    - controller-manager.key
+
+###########################         KEY GENERATION          ######################################
+> openssl genrsa -out kube-controller-manager.key
+> openssl req -new -key kube-controller-manager.key -subj "/CN=kube-controller-manager/O=system:kube-controller-manager" -out kube-controller-manager.csr
+> openssl x509 -req -in kube-controller-manager.csr -CA ca.crt -CAkey ca.key -out kube-controller-manager.crt
+
+kube-proxy:
+    - kube-proxy.crt
+    - kube-proxy.key
+
+###########################         KEY GENERATION          ######################################
+> openssl genrsa -out kube-proxy.key
+> openssl req -new -key kube-proxy.key -subj "/CN=kube-proxy" -out kube-proxy.csr
+> openssl x509 -req -in kube-proxy.csr -CA ca.crt -CAkey ca.key -out kube-proxy.crt
+
+
+
+kube-api server talks to ETCD server, so kube api server is a client to etcd server:
+    - apiserver-etcd-client.crt
+    - apiserver-etcd-client.key
+
+
+kube-api server also talks to kubelet on all worker nodes to know the pods status.
+    - apiserver-kubelet-client.crt
+    - apiserver-kubelet-client.key
+
+
+
+
+
+Use the below command to call the kube-api server using curl.
+
+curl https://10.0.2.15:6443/api/v1/pods --key developer.key --cert developer.crt --cacert ca.crt
+
+If you face the below error, try with sudo.. If you face same error again as below
+
+    curl: (58) unable to set private key file: 'developer.key' type PEM
+
+
+check the MD5 for key and cert like below
+
+To ensure that your certificate and key match, you can use the following commands:
+
+openssl x509 -noout -modulus -in developer.crt | openssl md5
+openssl rsa -noout -modulus -in developer.key | openssl md5
+
+You should see something that looks like the following:
+
+MD5(stdin)= 8ef86c334f7dcbbd0cf70ef2e1f6851e
+
+If the two values don't match, you're not using the correct combination.
+
+
+
+
+
+##############################################################################################################################
+
+To check the full list of namespaced and non-namespaced (cluster) level resources use below command
+
+kubectl api-resources --namespaced=true             -> gives list of resources scoped at namespace level
+kubectl api-resources --namespaced=false            -> gives list of resources scoped at cluster level
+
+
+
+
+
+
+
+################### IMAGE SECURITY #######################
+
+kubectl create secert docker-registry regcred \
+    --docker-server=private-regsitry.io \
+    --docker-username=<username> \
+    --docker-password=<password> \
+    --docker-email=<email.org.com>
