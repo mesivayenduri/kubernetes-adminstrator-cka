@@ -1,0 +1,155 @@
+Check Architecture First:
+
+dpkg --print-architecture
+
+based on the architecture download the binaries
+
+Containerd:
+==============================================================================
+==============================================================================
+
+    wget https://github.com/containerd/containerd/releases/download/v1.7.15/containerd-1.7.15-linux-amd64.tar.gz
+    tar Cxzvf /usr/local containerd-1.7.15-linux-amd64.tar.gz
+
+    wget https://raw.githubusercontent.com/containerd/containerd/main/containerd.service
+    cp containerd.service /etc/systemd/system/
+
+    systemctl daemon-reload
+    systemctl enable --now containerd
+
+
+    wget https://github.com/opencontainers/runc/releases/download/v1.1.12/runc.amd64
+    install -m 755 runc.amd64 /usr/local/sbin/runc
+
+    wget https://github.com/containernetworking/plugins/releases/download/v1.4.1/cni-plugins-linux-amd64-v1.4.1.tgz
+    mkdir -p /opt/cni/bin
+    tar Cxzvf /opt/cni/bin cni-plugins-linux-amd64-v1.4.1.tgz
+
+
+ETCD:
+=============================================================================
+=============================================================================
+
+ETCD_VER=v3.5.13
+
+# choose either URL
+GOOGLE_URL=https://storage.googleapis.com/etcd
+GITHUB_URL=https://github.com/etcd-io/etcd/releases/download
+DOWNLOAD_URL=${GOOGLE_URL}
+
+rm -f etcd-${ETCD_VER}-linux-amd64.tar.gz
+rm -rf etcd-download-test && mkdir -p etcd-download-test
+
+curl -L ${DOWNLOAD_URL}/${ETCD_VER}/etcd-${ETCD_VER}-linux-amd64.tar.gz -o etcd-${ETCD_VER}-linux-amd64.tar.gz
+tar xzvf etcd-${ETCD_VER}-linux-amd64.tar.gz -C etcd-download-test --strip-components=1
+rm -f etcd-${ETCD_VER}-linux-amd64.tar.gz
+
+etcd-download-test/etcd --version
+etcd-download-test/etcdctl version
+etcd-download-test/etcdutl version
+
+
+cp etcd-download-test/etcd /usr/local/bin
+cp etcd-download-test/etcdctl /usr/local/bin
+
+
+Make the etcd as a system service
+---------------------------------
+
+sudo mkdir /etc/etcd # This is for configuration
+ 
+sudo mkdir /var/lib/etcd # This is for data
+
+sudo groupadd --system etcd
+
+sudo useradd -s /sbin/nologin --system -g etcd etcd
+ 
+sudo chown -R etcd:etcd /var/lib/etcd/
+
+Create a new systemd service file /etc/systemd/system/etcd.service with the following contents:
+
+    [Unit]
+    
+    Description=etcd service
+    
+    Documentation=https://github.com/etcd-io/etcd
+    
+    After=network.target
+    
+    After=network-online.target
+    
+    Wants=network-online.target
+    
+    [Service]
+    
+    User=etcd
+    
+    Type=notify
+    
+    Environment=ETCD_DATA_DIR=/var/lib/etcd
+    
+    Environment=ETCD_NAME=%m
+    
+    ExecStart=/usr/local/bin/etcd
+    
+    Restart=always
+    
+    RestartSec=10s
+    
+    LimitNOFILE=40000
+    
+    [Install]
+    
+    WantedBy=multi-user.target
+
+systemctl daemon-reload
+
+systemctl start etcd.service
+
+systemctl status etcd.service
+
+
+Kube Controller Manager:
+============================================================================
+============================================================================
+
+A controller is a process that continously monitors the state of various componenets with in the system, and works towards 
+bringing the whole system to the desired funtioning state.
+
+https://storage.googleapis.com/kubernetes-release/release/v1.13.0/bin/linux/amd64/kube-controller-manager
+
+or 
+
+Download from here https://kubernetes.io/releases/download/   ( Prefer this option )
+Documentation : https://kubernetes.io/docs/reference/command-line-tools-reference/kube-controller-manager/
+
+
+If you install kubernetes cluster using kubeadm, kube-controller-manager will be deployed as a pod.
+You can see the kube-controller-manager options at /etc/kubernetes/manifests/kube-controller-manager.yaml
+
+
+
+kube scheduler:
+=============================================================================
+=============================================================================
+
+A scheduler is only responsible to identify which node is the best fit for the pod to place.
+
+
+Download and run it as a service https://dl.k8s.io/v1.30.0/bin/linux/amd64/kube-scheduler
+
+
+If you install kubernetes cluster using kubeadm, kube-scheduler will be deployed as a pod.
+You can see the kube-scheduler options at /etc/kubernetes/manifests/kube-scheduler.yaml
+
+
+kublet:
+============================================================================
+============================================================================
+Download and run it as a service https://dl.k8s.io/v1.30.0/bin/linux/amd64/kubelet
+
+
+kube-proxy:
+============================================================================
+============================================================================
+Download and run it as a service https://dl.k8s.io/v1.30.0/bin/linux/amd64/kube-proxy

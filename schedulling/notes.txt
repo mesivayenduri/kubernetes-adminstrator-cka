@@ -1,0 +1,233 @@
+NOTE: Taints are applied on Nodes
+      Tolerations are applied on Pods
+
+kubectl taint nodes node-name key=value:taint-effect
+                                        NoSchedule
+                                        PreferNoSchedule
+                                        NoExecute
+
+eg: kubectl taint nodes controlplane env=dev:NoSchedule
+
+To untaint a node:
+
+kubectl taint nodes controlplane env=dev:NoSchedule-
+
+
+
+pods.yaml:
+
+apiVersion: v1
+kind: Pod
+metadata:
+    name: nginx-dev
+    namespace: default
+spec:
+  containers:
+  - name: nginx-dev
+    image: nginx:latest
+  tolerations:
+    - key: "env"
+      operator: "Equal"
+      value: "dev"
+      effect: "NoSchedule"
+
+
+NODE SELECTOR:
+==============
+
+To label a node: 
+
+kubectl label node node-name key=value
+kubectl label node controlplane size=Large
+kubectl label node controlplane type=AI
+
+To remove a label:
+
+kubectl label node controlplane type-
+
+
+NODE AFFINITY:
+==============
+
+Types of NodeAffinity:
+    requiredDuringSchedulingIgnoreDuringExecution
+    preferredDuringSchedulingIngnoreDuringExecution
+
+Eg:
+===
+apiVersion: v1
+kind: Pod
+metadata:
+    name: nginx-dev
+spec:
+  containers:
+  - name: nginx-dev
+    image: nginx:latest
+  affinity:
+    nodeAffinity:
+      requiredDuringSchedulingIgnoreDuringExecution
+        nodeSelectorTerms:
+        - matchExpressions:
+          - key: size
+            operator: Exists
+
+
+
+Eg:
+===
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  labels:
+    app: nginx-dev
+  name: nginx-dev
+spec:
+  replicas: 3
+  selector:
+    matchLabels:
+      env: dev
+      app: nginx-dev
+  template:
+    metadata:
+      labels:
+        env: dev
+        app: nginx-dev
+    spec:
+      containers:
+      - image: nginx:latest
+        name: nginx-dev
+        ports:
+        - containerPort: 80
+        resources:
+          limits:
+            cpu: 100m
+            memory: 300Mi
+          requests:
+            cpu: 30m
+            memory: 100Mi
+      affinity:
+        nodeAffinity:
+          preferredDuringSchedulingIgnoredDuringExecution:
+          - weight: 1
+            preference:
+              matchExpressions:
+              - key: type
+                operator: In
+                values:
+                - AI
+
+
+
+DAEMONSET:
+=======================
+
+apiVersion: apps/v1
+kind:
+metadata:
+spec:
+  selector:
+    matchLabels:
+      app: something
+  template:
+    metadata:
+      labels:
+        app: something
+    spec:
+        containers
+        - name: nginx
+          image: nginx:latest
+
+
+
+
+
+
+##################################################
+MULTIPLE SCHEUDLERS
+
+  -> You can have multiple schedulers configured in the kubernetes.
+  -> By default kube-scheuler/default-scheduler will be there in the kubernetes cluster.
+  -> If you want you add more number of schedulers to the clusters with your own scheduling algorithms.
+  -> To tell kubernetes by which scheduler the pod should be scheduled you need provide schedulerName in the pod definition file like below
+
+
+Ref: https://github.com/kodekloudhub/certified-kubernetes-administrator-course/blob/master/docs/03-Scheduling/18-Multiple-Schedulers.md
+
+apiVersion: v1
+kind: Pod
+metadata:
+  name: nginx
+spec:
+  containers:
+  - image: nginx
+    name: nginx
+  schedulerName: my-custom-scheduler
+
+To check which scheduler scheduled the pods, go to events of the pod and look for SOURCE
+
+
+####################################################
+
+
+SCHEUDLER PROFILES
+-------------------
+Whenever you tried to schedule a pod, it goes through multiple checks.
+
+  - SchedulingQueue (Priority Sort plugin)
+  - Filtering (Node Resource fit plugin, NodeName plugin, NodeUnschedulable plugin )
+  - Scoring (NodeResourceFit plugin, ImageLocality plugin )
+  - Binding
+
+  Whenever you tried to schedule a pod, it will be placed in a queue called SchedulingQueue, where based on the priority set at the Pod definition file,
+  pods will be prioritized.
+
+  Then pods enters filtering stage, pods will be filtered based on the resources requirement against the resources available in the nodes.
+
+  Then pods enters scorings stage, where it looks for how much amount of cpu/memory will be left if it places a pod on a certain node. The pod where more cpu/memory
+  remains will win.
+
+  Then pods enters Binding stage, where pod will be binded/placed on a node that won in the previous stage.
+
+
+All the above checks are acheived through plugins.
+We can also customize and use our own plugins. This can be achieved with the help of EXTENSION POINTS.
+  - Queue Sort
+  - preFilter, Filter, PostFilter
+  - preScore, Score, Reserve
+  - preBind, Bind, PostBind
+
+We just need write our own plugin and plug it in one of the above extension points.
+
+Scheduling Profiles helps us to configure multiple scheduler profiles under a single scheduler
+
+my-scheduler-config.yaml
+-------------------------
+apiVersion: kubescheduler.config.k8s.io/v1
+kind: KubeScheulerConfiguration
+profiles:
+  - schedulerName: my-scheduler1
+    plugins:
+      score:
+        disabled:
+          - name: TaintTolerations
+        enabled:
+          - name: MyCustomPlugin1
+          - name: MyCustomPlugin2
+
+
+
+
+Ref:
+
+https://github.com/kubernetes/community/blob/master/contributors/devel/sig-scheduling/scheduling_code_hierarchy_overview.md
+
+https://kubernetes.io/blog/2017/03/advanced-scheduling-in-kubernetes/
+
+https://jvns.ca/blog/2017/07/27/how-does-the-kubernetes-scheduler-work/
+
+https://stackoverflow.com/questions/28857993/how-does-kubernetes-scheduler-work
+
+
+
+
+
