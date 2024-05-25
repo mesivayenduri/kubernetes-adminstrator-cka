@@ -1,0 +1,8 @@
+Pods Ip range configure at networking plugin config with IPALLOC_RANGES
+
+Service IP range configure at kube-apiserver with "--service-cluster-ip-range"
+
+
+What type of proxy is the kube-proxy configured to use?
+    kubectl logs <kube-proxy-pod-name> -n kube-system
+    - check for kubeproxy logs. It should show either iptables/ipvs

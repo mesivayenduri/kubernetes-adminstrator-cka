@@ -1,0 +1,5 @@
+kubectl run nginx --image=nginx --labels="app=nginx-dev,env=development" --dry-run=client -o yaml > pod.yaml
+
+kubectl apply -f pod.yaml
+
+kubectl get pods -l="env=development,app=nginx-dev"

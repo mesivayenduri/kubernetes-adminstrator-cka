@@ -1,0 +1,9 @@
+kubectl create namespace development --dry-run=client -o yaml > development-namespace.yaml
+
+kubectl apply -f development-namespace.yaml
+
+kubectl run nginx --image=nginx --labels="app=nginx,env=development" --dry-run=client -o yaml > nginx.yaml
+
+vi nginx.yaml -> update namespace in metadata
+
+kubectl apply -f nginx.yaml

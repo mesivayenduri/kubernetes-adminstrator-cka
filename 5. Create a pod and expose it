@@ -1,0 +1,7 @@
+Approach1:
+kubectl run nginx --image=nginx --port=80 --expose
+
+
+Approch2:
+kubectl run nginx --image=nginx --port=80
+kubectl expose pod nginx --port=80 --name=nginx-service

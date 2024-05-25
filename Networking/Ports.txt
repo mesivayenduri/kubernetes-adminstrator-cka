@@ -1,0 +1,9 @@
+    COMPONENT                   PORT
+    ETCD                        2379
+    ETCD-clients(peers)         2380
+    kube-api                    6443
+    kubelet                     10250
+    kube-scheduler              10259
+    kube-controller-manager     10257
+
+    Services                    30000-32767

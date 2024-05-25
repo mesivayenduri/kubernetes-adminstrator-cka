@@ -1,0 +1,6 @@
+1.
+
+create a user named "developer". Create a appropriate Role,Rolebingings,ClusterRole and ClusterRoleBindings that Should have permissions to get of configmaps, secrets, deployments, ingress, service , pv, pvc, namespaces
+
+
+

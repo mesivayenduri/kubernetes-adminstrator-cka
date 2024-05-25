@@ -1,0 +1,23 @@
+Upgrade a deployment by using rolling update
+
+kubectl create deployment nginx --image=nginx:1.25.0 --replicas=1 > nginx.yaml
+
+edit the nginx.yaml and add
+
+strategy:
+    type: RollingUpdate
+
+kubectl apply -f nginx.yaml
+
+
+kubectl set image deployment/nginx nginx=nginx:1.26.0
+
+
+            OR
+
+
+kubectl create deployment nginx --image=nginx:1.25.0
+
+kubectl set image deployment/nginx nginx=nginx:1.26.0
+
+kubectl rollout status nginx
