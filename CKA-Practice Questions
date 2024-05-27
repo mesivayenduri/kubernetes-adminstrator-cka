@@ -1,11 +1,24 @@
-Upgrade the cluster
+Update the image of the deployment.
+    -   kubectl set image deployment nginx nginx=nginx:1.26.0
+change the static pod path.
+    -   update staticPodPath in /var/lib/kubelet/config.yaml
+Upgrade the cluster.
+    Done - Refer kubeadm single node cluster steps.txt
 Create a deployment with replicas
+    - kubectl create deployment nginx2 --image=nginx:latest --replicas=3
 Create a pod with labels
+    - kubectl run nginx3 --image=nginx:latest --labels="app=hazelcast,env=prod"
 Create a pod in a namespace
+    - kubectl run nginx --image=nginx:latest --labels="app=nginx,env=test" -n test
 Create a pod and expose it
+    - kubectl run nginx --image=nginx:latest --labels="app=nginx,env=test" --port=80 --expose
 Upgrade a deployment by using rolling update
+    - kubectl set image deployment test nginx=nginx:1.26.0 -n test 
+    - kubectl rollout status deployment/test
 Create a pod with a command
+    - kubectl run nginx3 --image=nginx:latest --labels="app=hazelcast,env=prod"
 Taint a node to be unschedulable
+    - kubectl taint node controlplane master=true:NoSchedule
 Create a new service account, clusterrole and clusterrolebinding
 Create a NetworkPolicy that allows all pods in the namespace to use one port
 List all the internal IP's of all the nodes in the cluster

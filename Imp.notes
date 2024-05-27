@@ -6,3 +6,13 @@ Service IP range configure at kube-apiserver with "--service-cluster-ip-range"
 What type of proxy is the kube-proxy configured to use?
     kubectl logs <kube-proxy-pod-name> -n kube-system
     - check for kubeproxy logs. It should show either iptables/ipvs
+
+
+
+
+kubectl get secret my-secret -o json | jq ".data | map_values(@base64d)"
+
+
+To stream logs of multiple pods at a time:
+
+kubectl logs -f -l run=nginx -n <namespace>
